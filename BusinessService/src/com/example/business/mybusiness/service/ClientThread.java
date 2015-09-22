@@ -8,6 +8,7 @@ import java.net.Socket;
 import com.example.business.mybusiness.communication.serializer.Serialize;
 import com.example.business.mybusiness.communication.serializer.SerializeReader;
 import com.example.business.mybusiness.communication.serializer.SerializeWriter;
+import com.example.business.mybusiness.handle.BusinessBus;
 import com.example.business.mybusiness.model.FirstRequstModel;
 import com.example.business.mybusiness.model.FirstResponseModel;
 import com.example.business.mybusiness.utils.LogUtil;
@@ -18,6 +19,8 @@ public class ClientThread extends Thread {
 	private Socket socket;
 	
 	private String serviceCode = "";
+	
+	private Object request;
 	
 	public ClientThread(Socket socket) {
 		super();
@@ -80,13 +83,7 @@ public class ClientThread extends Thread {
 	 */
 	private Object getResponseByServiceCode() {
 		if (StringUtil.isEmpty(serviceCode) || serviceCode.length() < 2) return null;
-		int code = Integer.parseInt(serviceCode.substring(0, 2));
-		switch (code) {
-		case 11:
-			return new FirstResponseModel();
-		default:
-			return null;
-		}
+		return BusinessBus.getResponseByServiceCode(serviceCode, request);
 	}
 	
 	/**
@@ -95,13 +92,7 @@ public class ClientThread extends Thread {
 	 */
 	private Class<?> getRequestClassByServiceCode() {
 		if (StringUtil.isEmpty(serviceCode) || serviceCode.length() < 2) return null;
-		int code = Integer.parseInt(serviceCode.substring(0, 2));
-		switch (code) {
-		case 11:
-			return FirstRequstModel.class;
-		default:
-			return null;
-		}
+		return BusinessBus.getRequestClassByServiceCode(serviceCode);
 	}
 
 	/**
@@ -122,8 +113,8 @@ public class ClientThread extends Thread {
 				SerializeReader serializeReader = new SerializeReader(maxLenByte);
 				maxLenght = serializeReader.readInt(8);
 				requestBodyByte = readData(inputStream, maxLenght, 1024);
-				Object object = Serialize.deserialize(requestBodyByte, getRequestClassByServiceCode(), Serialize.charsetName_UTF8);
-				LogUtil.log("read request success object = " + object.toString() );
+				request = Serialize.deserialize(requestBodyByte, getRequestClassByServiceCode(), Serialize.charsetName_UTF8);
+				LogUtil.log("read request success object = " +  request.toString() );
 			} else {
 				LogUtil.log("Serialize wrong lenght");
 			}
